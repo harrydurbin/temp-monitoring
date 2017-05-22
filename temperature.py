@@ -22,6 +22,7 @@ c = conn.cursor()
 # Create table
 c.execute('''CREATE TABLE IF NOT EXISTS temperature
                  (date text, inside real, outside real)''')
+prediction = 0
 
 # plotly config
 USERNAME = private.USERNAME
@@ -80,9 +81,14 @@ while True:
 	# Insert a row of data
 	conn = sqlite3.connect(DATA_PATH)
 	c = conn.cursor()
-	new_row = [(cur_time, sensor_data, outside_temp,)	              ]
-	c.executemany("INSERT INTO temperature ('date', 'outside', 'inside') VALUES (?,?,?)", new_row)
+	new_row = [(cur_time, sensor_data, outside_temp,)]
+	c.executemany("INSERT INTO temperature ('date', 'inside', 'outside') VALUES (?,?,?)", new_row)
 	conn.commit()
+
+    if prediction > 0:
+        new_row = [(prediction,)]
+    	c.execute("INSERT INTO temperature ('forecast') VALUES (?)", new_row)
+    	conn.commit()
 
 	# fetch the recent readings
 	df = pd.read_sql_query(
@@ -111,7 +117,7 @@ while True:
 	model = ARIMA(df['outside'], order=(5,1,0))
 	model_fit = model.fit(disp=0)
 	forecast = model_fit.forecast(5)
-
+    prediction = forecast[0][0]
 	t0 = df['date1'][-1]
 	new_dates = [t0+datetime.timedelta(minutes = 60*i) for i in range(5)]
 	new_dates1 = map(lambda x: x.strftime('%Y-%m-%d %H:%M'), new_dates)
@@ -183,12 +189,5 @@ while True:
 	fig = go.Figure(data=data, layout=layout)
 
 	plot_url = py.plot(fig, filename='home_temperature', auto_open = False)
-
-	# Insert a row of data
-	# conn = sqlite3.connect(DATA_PATH)
-	# c = conn.cursor()
-	new_row = [(forecast[0][0],)]
-	c.execute("INSERT INTO temperature ('forecast') VALUES (?)", new_row)
-	conn.commit()
 
 	time.sleep(60*60)# delay between stream posts
