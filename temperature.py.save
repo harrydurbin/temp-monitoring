@@ -87,7 +87,7 @@ while True:
 
 	if prediction > 0:
 		print prediction
-		new_row = [(prediction,)]
+		new_row = [prediction,]
 		c.executemany("INSERT INTO temperature ('forecast') VALUES (?)", new_row)
 		conn.commit()
 
@@ -118,7 +118,8 @@ while True:
 	model = ARIMA(df['outside'], order=(5,1,0))
 	model_fit = model.fit(disp=0)
 	forecast = model_fit.forecast(5)
-	prediction = round(forecast[0][0],2)
+	prediction = forecast[0][0]
+	
 	t0 = df['date1'][-1]
 	new_dates = [t0+datetime.timedelta(minutes = 60*i) for i in range(1,6)]
 	new_dates1 = map(lambda x: x.strftime('%Y-%m-%d %H:%M'), new_dates)
